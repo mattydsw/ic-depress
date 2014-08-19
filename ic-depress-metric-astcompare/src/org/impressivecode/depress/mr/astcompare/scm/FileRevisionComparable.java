@@ -1,4 +1,4 @@
-package org.impressivecode.depress.mr.astcompare.svn;
+package org.impressivecode.depress.mr.astcompare.scm;
 
 import java.util.Comparator;
 

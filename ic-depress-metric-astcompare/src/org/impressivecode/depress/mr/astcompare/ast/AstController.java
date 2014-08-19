@@ -13,7 +13,7 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.team.core.history.IFileRevision;
 import org.impressivecode.depress.mr.astcompare.db.DbHandler;
-import org.impressivecode.depress.mr.astcompare.svn.SvnHandler;
+import org.impressivecode.depress.mr.astcompare.scm.ScmHandler;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
 
@@ -46,13 +46,13 @@ public class AstController {
     private DbHandler db;
     private File previous;
     private File actual;
-    private SvnHandler svnHandler;
+    private ScmHandler scmHandler;
 
-    public AstController(final ExecutionContext exec, DbHandler db, SvnHandler svnHandler) {
+    public AstController(final ExecutionContext exec, DbHandler db, ScmHandler scmHandler) {
         this.distiller = ChangeDistiller.createFileDistiller(Language.JAVA);
         this.db = db;
         this.exec = exec;
-        this.svnHandler = svnHandler;
+        this.scmHandler = scmHandler;
     }
 
     public void collectDataAndSaveInDb(IPackageFragment[] packages, String selectedProjectName, long revisionDateMin,
@@ -69,7 +69,7 @@ public class AstController {
                 for (ICompilationUnit unit : mypackage.getCompilationUnits()) {
                     checkIfCancelledAndSetProgress(null);
 
-                    IFileRevision[] revisions = svnHandler.getProperFileRevisions(unit.getResource());
+                    IFileRevision[] revisions = scmHandler.getProperFileRevisions(unit.getResource());
 
                     if (revisions != null && revisions.length > 1) {
 

@@ -1,4 +1,4 @@
-package org.impressivecode.depress.mr.astcompare.svn;
+package org.impressivecode.depress.mr.astcompare.scm;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,14 +30,14 @@ import org.knime.core.node.ExecutionContext;
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-public class SvnHandler {
+public class ScmHandler {
 
     private final ExecutionContext exec;
     private RepositoryProvider repositoryProvider;
     long revisionDateMin;
     long revisionDateMax;
 
-    public SvnHandler(ExecutionContext exec, RepositoryProvider repositoryProvider, long revisionDateMin,
+    public ScmHandler(ExecutionContext exec, RepositoryProvider repositoryProvider, long revisionDateMin,
             long revisionDateMax) {
         super();
         this.exec = exec;

@@ -23,7 +23,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.team.core.RepositoryProvider;
 import org.impressivecode.depress.mr.astcompare.ast.AstController;
 import org.impressivecode.depress.mr.astcompare.db.DbHandler;
-import org.impressivecode.depress.mr.astcompare.svn.SvnHandler;
+import org.impressivecode.depress.mr.astcompare.scm.ScmHandler;
 import org.impressivecode.depress.mr.astcompare.utils.AstMetricsTransformer;
 import org.impressivecode.depress.mr.astcompare.utils.Utils;
 import org.knime.core.data.DataTableSpec;
@@ -87,9 +87,9 @@ public class AstComparePluginNodeModel extends NodeModel {
         if (selectedProject != null) {
             IJavaProject project = JavaCore.create(selectedProject);
             RepositoryProvider provider = RepositoryProvider.getProvider(project.getProject());
-            SvnHandler svnHandler = new SvnHandler(exec, provider, revisionDateMin, revisionDateMax);
+            ScmHandler scmHandler = new ScmHandler(exec, provider, revisionDateMin, revisionDateMax);
 
-            AstController controller = new AstController(exec, db, svnHandler);
+            AstController controller = new AstController(exec, db, scmHandler);
             if (!db.isDataExistInDb(selectedProject.getName(), revisionDateMin, revisionDateMax)) {
                 controller.collectDataAndSaveInDb(project.getPackageFragments(), selectedProject.getName(),
                         revisionDateMin, revisionDateMax);
