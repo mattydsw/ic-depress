@@ -2,9 +2,14 @@ package org.impressivecode.depress.mr.astcompare.scm;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Hashtable;
 import java.util.List;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.team.core.RepositoryProvider;
 import org.eclipse.team.core.history.IFileHistory;
 import org.eclipse.team.core.history.IFileHistoryProvider;
@@ -12,6 +17,7 @@ import org.eclipse.team.core.history.IFileRevision;
 import org.eclipse.team.core.history.provider.FileHistoryProvider;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
+import org.knime.core.node.InvalidSettingsException;
 
 /*
  ImpressiveCode Depress Framework
@@ -34,16 +40,70 @@ public class ScmHandler {
 
     private final ExecutionContext exec;
     private RepositoryProvider repositoryProvider;
+    String topCommit;
+    String bottomCommit;
     long revisionDateMin;
+    public long getRevisionDateMin() {
+        return revisionDateMin;
+    }
+
+    public long getRevisionDateMax() {
+        return revisionDateMax;
+    }
+
     long revisionDateMax;
 
-    public ScmHandler(ExecutionContext exec, RepositoryProvider repositoryProvider, long revisionDateMin,
-            long revisionDateMax) {
+    public ScmHandler(ExecutionContext exec, RepositoryProvider repositoryProvider, String bottomCommit,
+            String topCommit) {
         super();
         this.exec = exec;
         this.repositoryProvider = repositoryProvider;
-        this.revisionDateMin = revisionDateMin;
-        this.revisionDateMax = revisionDateMax;
+        this.bottomCommit = bottomCommit;
+        this.topCommit = topCommit;
+    }
+    
+    public void convertCommitIdsToDates(IPackageFragment[] packages) throws JavaModelException, CanceledExecutionException, InvalidSettingsException {
+        revisionDateMin = Long.MIN_VALUE;
+        revisionDateMax = Long.MAX_VALUE;
+        if (bottomCommit.trim().isEmpty() && topCommit.trim().isEmpty()) {
+            return;
+        }
+        Hashtable<String, Long> revisionsWithTimestamps = new Hashtable<String, Long>();
+        
+        double progressIndex = 1.0d;
+        
+        for (IPackageFragment mypackage : packages) {
+            checkIfCancelledAndSetProgress((progressIndex++ / packages.length) * 0.2d);
+            
+            if (mypackage.getKind() == IPackageFragmentRoot.K_SOURCE) {
+                for (ICompilationUnit unit : mypackage.getCompilationUnits()) {
+                    checkIfCancelledAndSetProgress(null);
+                    
+                    IFileRevision[] fileRevisions = getFileRevisions(unit.getResource());
+
+                    if (fileRevisions != null && fileRevisions.length > 1) {
+                        for (IFileRevision revision : fileRevisions) {
+                            checkIfCancelledAndSetProgress(null);
+                            
+                            if (!revisionsWithTimestamps.contains(revision.getContentIdentifier())) {
+                                revisionsWithTimestamps.put(revision.getContentIdentifier(), revision.getTimestamp());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (revisionsWithTimestamps.containsKey(bottomCommit.trim())) {
+            revisionDateMin = revisionsWithTimestamps.get(bottomCommit.trim());
+        } else if (!bottomCommit.trim().isEmpty()) {
+            throw new InvalidSettingsException("Wrong first commit ID!");
+        }
+        if (revisionsWithTimestamps.containsKey(topCommit.trim())) {
+            revisionDateMax = revisionsWithTimestamps.get(topCommit.trim()); 
+        } else if (!topCommit.trim().isEmpty()) {
+            throw new InvalidSettingsException("Wrong last commit ID!");
+        }
     }
 
     public IFileRevision[] getProperFileRevisions(IResource file) throws CanceledExecutionException {
@@ -104,4 +164,14 @@ public class ScmHandler {
         return revisionDate >= rangeMin && revisionDate <= rangeMax;
     }
 
+    private void checkIfCancelledAndSetProgress(Double progress) throws CanceledExecutionException {
+        if (exec != null) {
+            exec.checkCanceled();
+
+            // no progress change
+            if (progress != null) {
+                exec.setProgress(progress);
+            }
+        }
+    }
 }

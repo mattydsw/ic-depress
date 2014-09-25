@@ -1,19 +1,18 @@
 package org.impressivecode.depress.mr.astcompare;
 
-import static org.impressivecode.depress.mr.astcompare.utils.Utils.DATE_FROM;
-import static org.impressivecode.depress.mr.astcompare.utils.Utils.DATE_TO;
+import static org.impressivecode.depress.mr.astcompare.utils.Utils.BOTTOM_COMMIT;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.EXCLUDE_TESTS;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.PROJECTS_NAMES;
+import static org.impressivecode.depress.mr.astcompare.utils.Utils.TOP_COMMIT;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.WEEKS;
+import static org.impressivecode.depress.mr.astcompare.utils.Utils.DEFAULT_VALUE;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.impressivecode.depress.mr.astcompare.utils.Utils;
 import org.knime.core.node.defaultnodesettings.DefaultNodeSettingsPane;
 import org.knime.core.node.defaultnodesettings.DialogComponentBoolean;
 import org.knime.core.node.defaultnodesettings.DialogComponentString;
@@ -53,12 +52,11 @@ public class AstComparePluginNodeDialog extends DefaultNodeSettingsPane {
         createNewGroup("Select project");
         addDialogComponent(new DialogComponentStringSelection(new SettingsModelString(PROJECTS_NAMES, ""), "Project:",
                 projects));
-        createNewGroup("Set revision's date range (DD-MM-YYYY)");
+        createNewGroup("Set revisions range (enter commit IDs)");
         setHorizontalPlacement(true);
-        addDialogComponent(new DialogComponentString(new SettingsModelString(DATE_FROM, Utils.getCurrentDayPlus(
-                Calendar.MONTH, -2)), "From:"));
+        addDialogComponent(new DialogComponentString(new SettingsModelString(BOTTOM_COMMIT, DEFAULT_VALUE), "First:"));
         setHorizontalPlacement(true);
-        addDialogComponent(new DialogComponentString(new SettingsModelString(DATE_TO, Utils.getCurrentDate()), "To:"));
+        addDialogComponent(new DialogComponentString(new SettingsModelString(TOP_COMMIT, DEFAULT_VALUE), "Last:"));
         createNewGroup("Choose sample's timeframe");
         addDialogComponent(new DialogComponentStringSelection(new SettingsModelString(WEEKS, "All"), "Weeks:",
                 new String[] { "2", "4", "8", "All" }));

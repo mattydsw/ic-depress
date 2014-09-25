@@ -35,11 +35,11 @@ import com.google.common.io.Closer;
  */
 public class Utils {
 
-    public static final String DATE_FROM = "dateFrom";
-    public static final String DATE_TO = "dateTo";
     public static final String WEEKS = "weeks";
     public static final String PROJECTS_NAMES = "projectsNames";
     public static final String EXCLUDE_TESTS = "excludeTests";
+    public static final String TOP_COMMIT = "topCommit";
+    public static final String BOTTOM_COMMIT = "bottomCommit";
     public static final String DEFAULT_VALUE = "";
     private static final NodeLogger logger = NodeLogger.getLogger(Utils.class);
     private static Calendar calendar = Calendar.getInstance();

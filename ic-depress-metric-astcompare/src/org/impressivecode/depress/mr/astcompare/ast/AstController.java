@@ -69,7 +69,7 @@ public class AstController {
         actual = File.createTempFile("astFileB", ".java");
 
         for (IPackageFragment mypackage : packages) {
-            checkIfCancelledAndSetProgress((progressIndex++ / packages.length) * 0.8d);
+            checkIfCancelledAndSetProgress((progressIndex++ / packages.length) * 0.6d + 0.2d);
 
             if (mypackage.getKind() == IPackageFragmentRoot.K_SOURCE) {
 

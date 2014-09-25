@@ -1,17 +1,16 @@
 package org.impressivecode.depress.mr.astcompare;
 
 import static org.impressivecode.depress.mr.astcompare.utils.AstMetricsTableFactory.createDataColumnSpec;
-import static org.impressivecode.depress.mr.astcompare.utils.Utils.DATE_FROM;
-import static org.impressivecode.depress.mr.astcompare.utils.Utils.DATE_TO;
+import static org.impressivecode.depress.mr.astcompare.utils.Utils.BOTTOM_COMMIT;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.DEFAULT_VALUE;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.EXCLUDE_TESTS;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.PROJECTS_NAMES;
+import static org.impressivecode.depress.mr.astcompare.utils.Utils.TOP_COMMIT;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.WEEKS;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.getWeeksAsInteger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Calendar;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
@@ -26,7 +25,6 @@ import org.impressivecode.depress.mr.astcompare.ast.AstController;
 import org.impressivecode.depress.mr.astcompare.db.DbHandler;
 import org.impressivecode.depress.mr.astcompare.scm.ScmHandler;
 import org.impressivecode.depress.mr.astcompare.utils.AstMetricsTransformer;
-import org.impressivecode.depress.mr.astcompare.utils.Utils;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
@@ -61,11 +59,10 @@ public class AstComparePluginNodeModel extends NodeModel {
 
     // default values
     private final SettingsModelString m_projects = new SettingsModelString(PROJECTS_NAMES, DEFAULT_VALUE);
-    private final SettingsModelString m_dateFrom = new SettingsModelString(DATE_FROM, Utils.getCurrentDayPlus(
-            Calendar.MONTH, -2));
-    private final SettingsModelString m_dateTo = new SettingsModelString(DATE_TO, Utils.getCurrentDate());
     private final SettingsModelString m_weeks = new SettingsModelString(WEEKS, "All");
     private final SettingsModelBoolean m_excludeTests = new SettingsModelBoolean(EXCLUDE_TESTS, true);
+    private final SettingsModelString m_topCommit = new SettingsModelString(TOP_COMMIT, DEFAULT_VALUE);
+    private final SettingsModelString m_bottomCommit = new SettingsModelString(BOTTOM_COMMIT, DEFAULT_VALUE);
     private final Shell shell = new Shell();
     private DbHandler db;
     private IProject selectedProject;
@@ -85,35 +82,40 @@ public class AstComparePluginNodeModel extends NodeModel {
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
             throws Exception {
         boolean excludeTests = m_excludeTests.getBooleanValue();
-        long revisionDateMin = Utils.getTime(m_dateFrom.getStringValue());
-        long revisionDateMax = Utils.getTime(m_dateTo.getStringValue());
+        String topCommit = m_topCommit.getStringValue();
+        String bottomCommit = m_bottomCommit.getStringValue();
 
         if (selectedProject != null) {
             IJavaProject project = JavaCore.create(selectedProject);
             RepositoryProvider provider = RepositoryProvider.getProvider(project.getProject());
-            ScmHandler scmHandler = new ScmHandler(exec, provider, revisionDateMin, revisionDateMax);
+            ScmHandler scmHandler = new ScmHandler(exec, provider, bottomCommit, topCommit);
+            scmHandler.convertCommitIdsToDates(project.getPackageFragments());
+            long revisionDateMin = scmHandler.getRevisionDateMin();
+            long revisionDateMax = scmHandler.getRevisionDateMax();
 
-            AstController controller = new AstController(exec, db, scmHandler);
+            AstController controller = new AstController(exec, db, scmHandler); // simple fields assignment in constructor
             if (!db.isDataExistInDb(selectedProject.getName(), revisionDateMin, revisionDateMax)) {
                 controller.collectDataAndSaveInDb(project.getPackageFragments(), selectedProject.getName(),
                         revisionDateMin, revisionDateMax, excludeTests);
             }
+            AstMetricsTransformer astMetricsTransformer = new AstMetricsTransformer(createDataColumnSpec());
+            BufferedDataTable out = astMetricsTransformer.transform(astMetricsTransformer.getMetricEntries(db,
+                    selectedProject.getName(), revisionDateMin, revisionDateMax,
+                    getWeeksAsInteger(m_weeks.getStringValue())), exec);
+            
+            return new BufferedDataTable[] { out };
+        } else {
+            throw new InvalidSettingsException("Please select Java project.");
         }
-        AstMetricsTransformer astMetricsTransformer = new AstMetricsTransformer(createDataColumnSpec());
-        BufferedDataTable out = astMetricsTransformer.transform(astMetricsTransformer.getMetricEntries(db,
-                selectedProject.getName(), revisionDateMin, revisionDateMax,
-                getWeeksAsInteger(m_weeks.getStringValue())), exec);
-
-        return new BufferedDataTable[] { out };
     }
 
     @Override
     protected void saveSettingsTo(final NodeSettingsWO settings) {
         m_projects.saveSettingsTo(settings);
-        m_dateFrom.saveSettingsTo(settings);
-        m_dateTo.saveSettingsTo(settings);
         m_weeks.saveSettingsTo(settings);
         m_excludeTests.saveSettingsTo(settings);
+        m_topCommit.saveSettingsTo(settings);
+        m_bottomCommit.saveSettingsTo(settings);
     }
 
     @Override
@@ -122,11 +124,11 @@ public class AstComparePluginNodeModel extends NodeModel {
         if (settings.containsKey(PROJECTS_NAMES)) {
             m_projects.loadSettingsFrom(settings);
         }
-        if (settings.containsKey(DATE_FROM)) {
-            m_dateFrom.loadSettingsFrom(settings);
+        if (settings.containsKey(TOP_COMMIT)) {
+            m_topCommit.loadSettingsFrom(settings);
         }
-        if (settings.containsKey(DATE_TO)) {
-            m_dateTo.loadSettingsFrom(settings);
+        if (settings.containsKey(BOTTOM_COMMIT)) {
+            m_bottomCommit.loadSettingsFrom(settings);
         }
         if (settings.containsKey(WEEKS)) {
             m_weeks.loadSettingsFrom(settings);
@@ -155,8 +157,6 @@ public class AstComparePluginNodeModel extends NodeModel {
                     throw new InvalidSettingsException("\"" + selectedProject.getName() + "\" is not Java project.");
                 }
             }
-            Utils.validateDate(settings.getString(DATE_FROM));
-            Utils.validateDate(settings.getString(DATE_TO));
 
         } catch (final CoreException e) {
             shell.getDisplay().asyncExec(new Runnable() {
