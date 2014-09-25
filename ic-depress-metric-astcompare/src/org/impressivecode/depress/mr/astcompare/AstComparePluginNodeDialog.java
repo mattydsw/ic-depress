@@ -2,6 +2,7 @@ package org.impressivecode.depress.mr.astcompare;
 
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.DATE_FROM;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.DATE_TO;
+import static org.impressivecode.depress.mr.astcompare.utils.Utils.EXCLUDE_TESTS;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.PROJECTS_NAMES;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.WEEKS;
 
@@ -14,8 +15,10 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.impressivecode.depress.mr.astcompare.utils.Utils;
 import org.knime.core.node.defaultnodesettings.DefaultNodeSettingsPane;
+import org.knime.core.node.defaultnodesettings.DialogComponentBoolean;
 import org.knime.core.node.defaultnodesettings.DialogComponentString;
 import org.knime.core.node.defaultnodesettings.DialogComponentStringSelection;
+import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 
 /*
@@ -59,5 +62,7 @@ public class AstComparePluginNodeDialog extends DefaultNodeSettingsPane {
         createNewGroup("Choose sample's timeframe");
         addDialogComponent(new DialogComponentStringSelection(new SettingsModelString(WEEKS, "All"), "Weeks:",
                 new String[] { "2", "4", "8", "All" }));
+        createNewGroup("Exclude tests");
+        addDialogComponent(new DialogComponentBoolean(new SettingsModelBoolean(EXCLUDE_TESTS, true), "Try to exclude test classes"));
     }
 }

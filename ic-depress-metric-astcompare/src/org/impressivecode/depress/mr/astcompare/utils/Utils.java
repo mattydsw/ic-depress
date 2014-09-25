@@ -39,6 +39,7 @@ public class Utils {
     public static final String DATE_TO = "dateTo";
     public static final String WEEKS = "weeks";
     public static final String PROJECTS_NAMES = "projectsNames";
+    public static final String EXCLUDE_TESTS = "excludeTests";
     public static final String DEFAULT_VALUE = "";
     private static final NodeLogger logger = NodeLogger.getLogger(Utils.class);
     private static Calendar calendar = Calendar.getInstance();

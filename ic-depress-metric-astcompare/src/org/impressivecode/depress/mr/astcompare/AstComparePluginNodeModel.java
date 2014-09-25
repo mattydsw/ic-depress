@@ -4,6 +4,7 @@ import static org.impressivecode.depress.mr.astcompare.utils.AstMetricsTableFact
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.DATE_FROM;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.DATE_TO;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.DEFAULT_VALUE;
+import static org.impressivecode.depress.mr.astcompare.utils.Utils.EXCLUDE_TESTS;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.PROJECTS_NAMES;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.WEEKS;
 import static org.impressivecode.depress.mr.astcompare.utils.Utils.getWeeksAsInteger;
@@ -36,6 +37,7 @@ import org.knime.core.node.NodeLogger;
 import org.knime.core.node.NodeModel;
 import org.knime.core.node.NodeSettingsRO;
 import org.knime.core.node.NodeSettingsWO;
+import org.knime.core.node.defaultnodesettings.SettingsModelBoolean;
 import org.knime.core.node.defaultnodesettings.SettingsModelString;
 
 /*
@@ -63,6 +65,7 @@ public class AstComparePluginNodeModel extends NodeModel {
             Calendar.MONTH, -2));
     private final SettingsModelString m_dateTo = new SettingsModelString(DATE_TO, Utils.getCurrentDate());
     private final SettingsModelString m_weeks = new SettingsModelString(WEEKS, "All");
+    private final SettingsModelBoolean m_excludeTests = new SettingsModelBoolean(EXCLUDE_TESTS, true);
     private final Shell shell = new Shell();
     private DbHandler db;
     private IProject selectedProject;
@@ -81,6 +84,7 @@ public class AstComparePluginNodeModel extends NodeModel {
     @Override
     protected BufferedDataTable[] execute(final BufferedDataTable[] inData, final ExecutionContext exec)
             throws Exception {
+        boolean excludeTests = m_excludeTests.getBooleanValue();
         long revisionDateMin = Utils.getTime(m_dateFrom.getStringValue());
         long revisionDateMax = Utils.getTime(m_dateTo.getStringValue());
 
@@ -92,7 +96,7 @@ public class AstComparePluginNodeModel extends NodeModel {
             AstController controller = new AstController(exec, db, scmHandler);
             if (!db.isDataExistInDb(selectedProject.getName(), revisionDateMin, revisionDateMax)) {
                 controller.collectDataAndSaveInDb(project.getPackageFragments(), selectedProject.getName(),
-                        revisionDateMin, revisionDateMax);
+                        revisionDateMin, revisionDateMax, excludeTests);
             }
         }
         AstMetricsTransformer astMetricsTransformer = new AstMetricsTransformer(createDataColumnSpec());
@@ -109,6 +113,7 @@ public class AstComparePluginNodeModel extends NodeModel {
         m_dateFrom.saveSettingsTo(settings);
         m_dateTo.saveSettingsTo(settings);
         m_weeks.saveSettingsTo(settings);
+        m_excludeTests.saveSettingsTo(settings);
     }
 
     @Override
@@ -125,6 +130,9 @@ public class AstComparePluginNodeModel extends NodeModel {
         }
         if (settings.containsKey(WEEKS)) {
             m_weeks.loadSettingsFrom(settings);
+        }
+        if (settings.containsKey(EXCLUDE_TESTS)) {
+            m_excludeTests.loadSettingsFrom(settings);
         }
     }
 

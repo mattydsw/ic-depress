@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
@@ -57,6 +59,11 @@ public class AstController {
 
     public void collectDataAndSaveInDb(IPackageFragment[] packages, String selectedProjectName, long revisionDateMin,
             long revisionDateMax) throws CanceledExecutionException, CoreException, IOException, SQLException {
+        collectDataAndSaveInDb(packages, selectedProjectName, revisionDateMin, revisionDateMax, false);
+    }
+
+    public void collectDataAndSaveInDb(IPackageFragment[] packages, String selectedProjectName, long revisionDateMin,
+            long revisionDateMax, boolean excludeTests) throws CanceledExecutionException, CoreException, IOException, SQLException {
         double progressIndex = 1.0d;
         previous = File.createTempFile("astFileA", ".java");
         actual = File.createTempFile("astFileB", ".java");
@@ -68,6 +75,20 @@ public class AstController {
 
                 for (ICompilationUnit unit : mypackage.getCompilationUnits()) {
                     checkIfCancelledAndSetProgress(null);
+
+                    if (excludeTests) {
+                        // check if should be excluded (is test class)
+                        IResource resource = unit.getUnderlyingResource();
+                        if (resource==null || resource.getType()!=IResource.FILE) {
+                            continue;
+                        } else {
+                            IFile file = (IFile) resource;
+                            String path = file.getRawLocation().toString();
+                            if (path.toLowerCase().contains("tests\\src\\java") || path.toLowerCase().contains("tests/src/java")) {
+                                continue;
+                            }
+                        }
+                    }
 
                     IFileRevision[] revisions = scmHandler.getProperFileRevisions(unit.getResource());
 
