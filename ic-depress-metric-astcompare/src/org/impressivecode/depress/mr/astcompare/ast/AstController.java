@@ -100,17 +100,25 @@ public class AstController {
                             checkIfCancelledAndSetProgress(null);
 
                             if (previousStream == null) {
-                                previousStream = revision.getStorage(null).getContents();
-
-                                saveStreamAsFile(previousStream, previous);
+                                try {
+                                    previousStream = revision.getStorage(null).getContents();
+                                    
+                                    saveStreamAsFile(previousStream, previous);
+                                } catch (CoreException e) {
+                                    // skip
+                                }
 
                                 continue;
                             } else {
-                                saveStreamAsFile(revision.getStorage(null).getContents(), actual);
-
-                                compareAstAndSaveToDb(selectedProjectName, revisionDateMin, revisionDateMax, revision);
-
-                                swapActualAndPreviousFile(actual, previous);
+                                try {
+                                    saveStreamAsFile(revision.getStorage(null).getContents(), actual);
+    
+                                    compareAstAndSaveToDb(selectedProjectName, revisionDateMin, revisionDateMax, revision);
+    
+                                    swapActualAndPreviousFile();
+                                } catch (CoreException e) {
+                                    // skip
+                                }
                             }
 
                         }
@@ -122,11 +130,12 @@ public class AstController {
         }
     }
 
-    private void swapActualAndPreviousFile(File actual, File previous) {
+    private void swapActualAndPreviousFile() throws IOException {
         File tmp = previous;
         previous = actual;
         actual = tmp;
         actual.delete();
+        previous.renameTo(File.createTempFile("astFileA", ".java"));
     }
 
     private void compareAstAndSaveToDb(String selectedProjectName, long revisionDateMin, long revisionDateMax,
