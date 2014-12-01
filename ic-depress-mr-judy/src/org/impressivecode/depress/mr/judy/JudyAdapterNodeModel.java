@@ -17,8 +17,8 @@
  */
 package org.impressivecode.depress.mr.judy;
 
-import static org.impressivecode.depress.mr.judy.JudyAdapterTableFactory.createDataColumnSpec;
-import static org.impressivecode.depress.mr.judy.JudyAdapterTableFactory.createTableRow;
+import static org.impressivecode.depress.mr.MRAdapterTableFactory.createDataColumnSpec;
+import static org.impressivecode.depress.mr.MRAdapterTableFactory.createTableRow;
 import static org.impressivecode.depress.mr.judy.JudyAdapterTableFactory.createTableSpec;
 import static org.impressivecode.depress.mr.judy.JudyEntriesParser.unmarshalResults;
 
@@ -50,7 +50,7 @@ public class JudyAdapterNodeModel extends NodeModel {
 
     private static final String DEFAULT_VALUE = "";
 
-    private static final String CONFIG_NAME = "depress.mr.judy.confname";
+    private static final String CONFIG_NAME = "file chooser";
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(JudyAdapterNodeModel.class);
 

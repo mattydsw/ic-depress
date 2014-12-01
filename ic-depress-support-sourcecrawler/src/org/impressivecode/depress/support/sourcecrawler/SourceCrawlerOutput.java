@@ -23,9 +23,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * 
  * @author Pawel Nosal, ImpressiveCode
- * 
  */
 @XmlRootElement(name = "root")
 public class SourceCrawlerOutput {
@@ -40,5 +38,4 @@ public class SourceCrawlerOutput {
     public void setSourceFiles(final List<SourceFile> sourceFiles) {
         this.sourceFiles = sourceFiles;
     }
-
 }

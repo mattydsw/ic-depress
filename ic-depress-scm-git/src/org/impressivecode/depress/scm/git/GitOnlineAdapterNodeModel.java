@@ -44,25 +44,23 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 /**
- * 
  * @author Tomasz Kuzemko
  * @author Sławomir Kapłoński
  * @author Marek Majchrzak, ImpressiveCode
  */
 public class GitOnlineAdapterNodeModel extends NodeModel {
-
     // the logger instance
     private static final NodeLogger logger = NodeLogger.getLogger(GitOnlineAdapterNodeModel.class);
 
-    static final String GIT_REPOSITORY_ADDRESS = "depress.scm.gitonline.filename";
+    static final String GIT_REPOSITORY_ADDRESS = "filename";
+    static final String GIT_REMOTE_REPOSITORY_ADDRESS = "remote address";
+    static final String GIT_PACKAGENAME = "package";
+    static final String GIT_BRANCH = "branch";
+    
     static final String GIT_REPOSITORY_DEFAULT = "";
-    static final String GIT_REMOTE_REPOSITORY_ADDRESS = "depress.scm.gitonline.remoteaddress";
     static final String GIT_REMOTE_REPOSITORY_DEFAULT = "";
-    static final String GIT_BRANCH = "depress.scm.git.branch";
     static final String GIT_BRANCH_DEFAULT = "";
-    static final String GIT_PACKAGENAME = "depress.scm.gitonline.package";
-    static final String GIT_PACKAGENAME_DEFAULT = "org.";
-
+    static final String GIT_PACKAGENAME_DEFAULT = "";
     static final Boolean GIT_PACKAGENAME_ACTIVE_STATE = false;
 
     // example value: the models count variable filled from the dialog
@@ -87,7 +85,7 @@ public class GitOnlineAdapterNodeModel extends NodeModel {
 
         logger.info("Reading logs from repository " + gitPath);
         GitOnlineLogParser parser = new GitOnlineLogParser();
-
+        
         List<GitCommit> commits = parser.parseEntries(gitPath,
                 options(gitPackageName.getStringValue(), gitBranch.getStringValue()));
 
@@ -162,6 +160,7 @@ public class GitOnlineAdapterNodeModel extends NodeModel {
         scm.setMessage(commit.getMessage());
         scm.setOperation(file.getOperation());
         scm.setPath(file.getPath());
+        scm.setExtension(file.getExtension());
         scm.setResourceName(file.getJavaClass());
         return scm;
     }

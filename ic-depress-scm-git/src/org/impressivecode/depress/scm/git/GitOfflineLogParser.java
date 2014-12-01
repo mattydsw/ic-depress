@@ -29,6 +29,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FilenameUtils;
+import org.impressivecode.depress.scm.SCMExtensionsParser;
+import org.impressivecode.depress.scm.SCMParserOptions;
+
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -47,14 +51,18 @@ import com.google.common.io.LineProcessor;
  * @author Tomasz Kuzemko
  * @author Sławomir Kapłoński
  * @author Marek Majchrzak, ImpressiveCode
+ * @author Maciej Borkowski, Capgemini Poland
  */
 public class GitOfflineLogParser {
+    final SCMParserOptions parserOptions;
 
-    public List<GitCommit> parseEntries(final String path, final GitParserOptions gitParserOptions) throws IOException,
-    ParseException {
+    public GitOfflineLogParser(final SCMParserOptions parserOptions) {
+        this.parserOptions = checkNotNull(parserOptions, "Options has to be set");
+    }
+
+    public List<GitCommit> parseEntries(final String path) throws IOException, ParseException {
         checkArgument(!isNullOrEmpty(path), "Path has to be set.");
-        return Files.readLines(new File(path), Charsets.UTF_8,
-                new GitLineProcessor(checkNotNull(gitParserOptions, "Options has to be set.")));
+        return Files.readLines(new File(path), Charsets.UTF_8, new GitLineProcessor(parserOptions));
     }
 
     static class GitLineProcessor implements LineProcessor<List<GitCommit>> {
@@ -67,12 +75,12 @@ public class GitOfflineLogParser {
                 .compile("^:\\d{6} \\d{6} [a-f0-9]{40} [a-f0-9]{40} (A|C|D|M|R|T)\t(.*)$");
 
         final ImmutableList.Builder<GitCommit> builder = ImmutableList.builder();
-        private GitParserOptions options;
+        private SCMParserOptions options;
         private GitCommit commit;
         private LEXER nextStep = LEXER.HASH;
         private long counter = 0;
 
-        public GitLineProcessor(final GitParserOptions options) {
+        public GitLineProcessor(final SCMParserOptions options) {
             this.options = options;
         }
 
@@ -157,28 +165,30 @@ public class GitOfflineLogParser {
             String operationCode = matcher.group(1);
             String origin = matcher.group(2);
             String transformed = origin.replaceAll("/", ".");
-
-            // only java classes
-            if (include(transformed)) {
+            
+            String parseJavaClass = "";
+            if (SCMExtensionsParser.extensionFits(transformed, options.getExtensionsNamesToFilter())) {
                 GitCommitFile gitFile = new GitCommitFile();
                 gitFile.setRawOperation(operationCode.charAt(0));
                 gitFile.setPath(origin);
-                gitFile.setJavaClass(parseJavaClass(transformed));
-                this.commit.getFiles().add(gitFile);
+                gitFile.setExtension(FilenameUtils.getExtension(transformed));
+                gitFile.setJavaClass(parseJavaClass);
+                if (transformed.endsWith(".java")) {
+                    if (packagePrefixValidate(transformed)) {
+                        gitFile.setJavaClass(parseJavaClass(transformed));
+                        commit.getFiles().add(gitFile);
+                    }
+                } else {
+                    commit.getFiles().add(gitFile);
+                }
             }
         }
 
-        private boolean include(final String path) {
-            boolean java = path.endsWith(".java");
-            if (java) {
-                if (options.hasPackagePrefix()) {
-                    return path.indexOf(options.getPackagePrefix()) != -1;
-                } else {
-                    return true;
-                }
-            } else {
-                return false;
+        private boolean packagePrefixValidate(final String path) {
+            if (options.hasPackagePrefix()) {
+                return path.indexOf(options.getPackagePrefix()) != -1;
             }
+            return false;
         }
 
         private String parseJavaClass(final String path) {

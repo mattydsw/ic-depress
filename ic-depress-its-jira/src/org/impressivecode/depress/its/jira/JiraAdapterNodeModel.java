@@ -17,9 +17,6 @@
  */
 package org.impressivecode.depress.its.jira;
 
-import static org.impressivecode.depress.its.jira.JiraAdapterTableFactory.createTableSpec;
-
-import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
@@ -29,38 +26,24 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.impressivecode.depress.its.ITSAdapterTableFactory;
 import org.impressivecode.depress.its.ITSDataType;
 import org.impressivecode.depress.its.ITSAdapterTransformer;
+import org.impressivecode.depress.its.ITSOfflineNodeModel;
 import org.knime.core.data.DataTableSpec;
 import org.knime.core.node.BufferedDataTable;
 import org.knime.core.node.CanceledExecutionException;
 import org.knime.core.node.ExecutionContext;
-import org.knime.core.node.ExecutionMonitor;
 import org.knime.core.node.InvalidSettingsException;
-import org.knime.core.node.NodeLogger;
-import org.knime.core.node.NodeModel;
-import org.knime.core.node.NodeSettingsRO;
-import org.knime.core.node.NodeSettingsWO;
-import org.knime.core.node.defaultnodesettings.SettingsModelString;
 import org.xml.sax.SAXException;
 
 import com.google.common.base.Preconditions;
 
 /**
- * 
  * @author Marek Majchrzak, ImpressiveCode
- * 
+ * @author Maciej Borkowski, Capgemini Poland
  */
-public class JiraAdapterNodeModel extends NodeModel {
-
-    private static final String DEFAULT_VALUE = "";
-
-    private static final String CONFIG_NAME = "depress.its.jira.confname";
-
-    private static final NodeLogger LOGGER = NodeLogger.getLogger(JiraAdapterNodeModel.class);
-
-    private final SettingsModelString fileSettings = createFileChooserSettings();
+public class JiraAdapterNodeModel extends ITSOfflineNodeModel {
 
     protected JiraAdapterNodeModel() {
-        super(0, 1);
+        super();
     }
 
     @Override
@@ -75,54 +58,24 @@ public class JiraAdapterNodeModel extends NodeModel {
         return new BufferedDataTable[] { out };
     }
 
-    private BufferedDataTable transform(final List<ITSDataType> entries, final ExecutionContext exec) throws CanceledExecutionException {
+    private BufferedDataTable transform(final List<ITSDataType> entries, final ExecutionContext exec)
+            throws CanceledExecutionException {
         ITSAdapterTransformer transformer = new ITSAdapterTransformer(ITSAdapterTableFactory.createDataColumnSpec());
         return transformer.transform(entries, exec);
     }
 
     private List<ITSDataType> parseEntries(final String filePath) throws ParserConfigurationException, SAXException,
-    IOException, ParseException {
-        return new JiraEntriesParser().parseEntries(filePath);
+            IOException, ParseException {
+        return new JiraEntriesParser(mappingManager.getPriorityModel().getIncluded(), mappingManager.getTypeModel()
+                .getIncluded(), mappingManager.getResolutionModel().getIncluded(), mappingManager.getStatusModel()
+                .getIncluded()).parseEntries(filePath);
     }
 
-    @Override
-    protected void reset() {
-    }
-
+    // FIXME: refactorize this function
     @Override
     protected DataTableSpec[] configure(final DataTableSpec[] inSpecs) throws InvalidSettingsException {
         Preconditions.checkArgument(inSpecs.length == 0);
-        return createTableSpec();
+        return JiraAdapterTableFactory.createTableSpec();
     }
 
-    @Override
-    protected void saveSettingsTo(final NodeSettingsWO settings) {
-        fileSettings.saveSettingsTo(settings);
-    }
-
-    @Override
-    protected void loadValidatedSettingsFrom(final NodeSettingsRO settings) throws InvalidSettingsException {
-        fileSettings.loadSettingsFrom(settings);
-    }
-
-    @Override
-    protected void validateSettings(final NodeSettingsRO settings) throws InvalidSettingsException {
-        fileSettings.validateSettings(settings);
-    }
-
-    @Override
-    protected void loadInternals(final File internDir, final ExecutionMonitor exec) throws IOException,
-    CanceledExecutionException {
-        // NOOP
-    }
-
-    @Override
-    protected void saveInternals(final File internDir, final ExecutionMonitor exec) throws IOException,
-    CanceledExecutionException {
-        // NOOP
-    }
-
-    static SettingsModelString createFileChooserSettings() {
-        return new SettingsModelString(CONFIG_NAME, DEFAULT_VALUE);
-    }
 }

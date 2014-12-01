@@ -17,26 +17,44 @@
  */
 package org.impressivecode.depress.its.jira;
 
-import static org.impressivecode.depress.its.jira.JiraAdapterNodeModel.createFileChooserSettings;
+import java.io.File;
+import java.util.List;
+import java.util.concurrent.Callable;
 
-import org.knime.core.node.defaultnodesettings.DefaultNodeSettingsPane;
-import org.knime.core.node.defaultnodesettings.DialogComponentFileChooser;
+import org.impressivecode.depress.its.FileParser;
+import org.impressivecode.depress.its.ITSOfflineNodeDialog;
+
+import org.knime.core.node.defaultnodesettings.SettingsModelString;
 
 /**
- * 
- * @author Marek Majchrzak, ImpressiveCode
- * 
+ * @author Maciej Borkowski, Capgemini Poland
  */
-public class JiraAdapterNodeDialog extends DefaultNodeSettingsPane {
-
-    private static final String FILE_EXTENSION = ".xml";
-    private static final String HISTORY_ID = "depress.its.jira.historyid";
-
+public class JiraAdapterNodeDialog extends ITSOfflineNodeDialog {
     protected JiraAdapterNodeDialog() {
-        addDialogComponent(getFileChooserComponent());
+        super();
     }
 
-    private DialogComponentFileChooser getFileChooserComponent() {
-        return new DialogComponentFileChooser(createFileChooserSettings(), HISTORY_ID, FILE_EXTENSION);
+    @Override
+    protected void createMappingManager() {
+        mappingManager.createFilterPriority(new RefreshCaller("priority"));
+        mappingManager.createFilterType(new RefreshCaller("type"));
+        mappingManager.createFilterResolution(new RefreshCaller("resolution"));
+        mappingManager.createFilterStatus(new RefreshCaller("status"));
+    }
+
+    private class RefreshCaller implements Callable<List<String>> {
+        private final String property;
+
+        RefreshCaller(final String property) {
+            this.property = property;
+        }
+
+        @Override
+        public List<String> call() throws Exception {
+            FileParser parser = new FileParser();
+            File file = new File(((SettingsModelString) (chooser.getModel())).getStringValue());
+            String expression = "/rss/channel/item/" + property + "[not(preceding::" + property + "/. = .)]";
+            return parser.parseXPath(file, expression);
+        }
     }
 }
